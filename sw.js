@@ -1,5 +1,5 @@
 // Tagwerk Service Worker – bei Änderungen an index.html die Versionsnummer erhöhen
-const CACHE = 'tagwerk-v4';
+const CACHE = 'tagwerk-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

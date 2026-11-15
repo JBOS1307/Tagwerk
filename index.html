@@ -215,8 +215,13 @@ nav.tabs svg{width:24px;height:24px}
 #sheet{position:fixed;inset:0;z-index:60;pointer-events:none}
 #sheet.open{pointer-events:auto}
 .sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.32);animation:fade .18s}
-.sheet-panel{position:absolute;left:0;right:0;bottom:0;max-width:640px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:8px 18px calc(18px + var(--sb));max-height:88vh;overflow-y:auto;animation:up .22s ease}
-.sheet-grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 12px}
+.sheet-panel{position:absolute;left:0;right:0;bottom:0;max-width:640px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:0 18px calc(18px + var(--sb));max-height:calc(100% - var(--st) - 24px);overflow-y:auto;overscroll-behavior:contain;animation:up .22s ease;transition:transform .2s}
+.sheet-panel.drag{transition:none}
+.sheet-top{position:sticky;top:0;z-index:3;background:var(--paper);padding:8px 0 4px;margin:0 -18px 6px;touch-action:none}
+.sheet-grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 6px}
+.sheet-x{position:absolute;right:12px;top:8px;width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink2)}
+.sheet-x svg{width:16px;height:16px;stroke-width:2.4}
+.sheet-panel h3{padding-right:40px}
 .sheet-panel h3{font-family:var(--mono);font-size:17px;margin:4px 0 12px}
 .sheet-panel h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin:18px 0 8px;font-family:var(--mono)}
 .list-btn{display:flex;width:100%;align-items:center;gap:10px;padding:13px 4px;border-bottom:1px solid var(--line);font-size:16px;text-align:left}
@@ -225,6 +230,26 @@ nav.tabs svg{width:24px;height:24px}
 .list-btn.danger{color:var(--warn)}
 @keyframes up{from{transform:translateY(100%)}}
 @keyframes fade{from{opacity:0}}
+/* Bücher */
+.shelf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 12px}
+.bk{text-align:left;min-width:0}
+.cv{aspect-ratio:2/3;border-radius:5px;overflow:hidden;background:var(--line);box-shadow:0 2px 8px rgba(0,0,0,.13);display:grid;place-items:center;width:100%}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.cv .ph{font-family:var(--mono);font-size:11px;padding:6px;text-align:center;color:var(--ink2);word-break:break-word;line-height:1.3}
+.bk b{font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:7px;word-break:break-word}
+.bk small{color:var(--ink3);font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk .mini-stars{color:#e8a317;font-size:11px;letter-spacing:1px}
+.reading{display:flex;gap:14px;align-items:flex-start}
+.prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:9px 0 6px}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+.res{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);text-align:left;width:100%;align-items:center}
+.res .cv{width:44px;flex:none}
+.res b{display:block;font-size:15px;line-height:1.3}
+.res small{color:var(--ink2);font-size:13px}
+.stars{display:flex;gap:2px;margin-top:8px}
+.stars button{font-size:26px;line-height:1;color:var(--line)}
+.stars button.on{color:#e8a317}
+.quote{border-left:3px solid var(--accent);padding:3px 0 3px 12px;margin:12px 0;font-family:var(--mono);font-size:15px;line-height:1.55;word-break:break-word}
 /* Startfrage */
 .intent{position:fixed;inset:0;z-index:70;background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1.3px);background-size:22px 22px;display:flex;align-items:center;justify-content:center;padding:calc(var(--st) + 24px) 22px calc(var(--sb) + 24px);animation:fade .2s;overflow-y:auto}
 .intent-inner{width:100%;max-width:460px;display:flex;flex-direction:column}
@@ -300,17 +325,18 @@ const I = {
   starOn:'<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.8l2.5 5.2 5.6.7-4.1 3.9 1 5.6L12 16.5l-5 2.7 1-5.6-4.1-3.9 5.6-.7z"/></svg>',
   ext:'<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   note:'<svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V4a.5.5 0 0 1 .5-.5z"/><path d="M9 12h6M9 16h4"/></svg>',
+  book:'<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>',
   tick:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 };
 
 // ---------- Daten ----------
 const KEY = 'tagwerk.v1';
-const defaultSettings = () => ({ intent:true, theme:'auto', editions:true, editionTimes:['07:00','18:00'], proxy:'', lastFetch:0 });
+const defaultSettings = () => ({ bookGoal:0, intent:true, theme:'auto', editions:true, editionTimes:['07:00','18:00'], proxy:'', lastFetch:0 });
 const defaultState = () => ({
   v: 1,
   notes: [],
   areas: ['Ideen','Arbeit','Familie','Projekte','Wissen'].map(name => ({ id: uid(), name })),
-  feeds: [], items: [], habits: [],
+  feeds: [], items: [], habits: [], books: [],
   settings: defaultSettings(),
 });
 function load(){
@@ -331,7 +357,7 @@ function save(now, silent){
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
 window.addEventListener('pagehide', () => save(true));
 
-const UI = { view:'heute', notesTab:'inbox', area:null, search:'', todoFilter:'open', newsFilter:'unread', newsFeed:'all', refreshing:false, noteId:null, noteEdit:false };
+const UI = { view:'heute', notesTab:'inbox', area:null, search:'', todoFilter:'open', newsFilter:'unread', newsFeed:'all', refreshing:false, noteId:null, noteEdit:false, bookShelf:'reading', bookId:null, addStatus:'want', results:[] };
 
 // ---------- Theme ----------
 const mq = matchMedia('(prefers-color-scheme: dark)');
@@ -583,10 +609,61 @@ async function addFeed(url){
   render();
 }
 
+// ---------- Bücher ----------
+const getBook = id => S.books.find(b => b.id === id);
+const bookPct = b => b.pages ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : 0;
+const fmtDk = k => { if (!k) return ''; const [y, m, d] = k.split('-').map(Number); return `${d}. ${MON3[m - 1]} ${y}`; };
+function coverHtml(b){
+  const ph = `<div class="ph">${esc(b.title)}</div>`;
+  return `<div class="cv">${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph&quot;>'+this.dataset.t+'</div>'" data-t="${esc(esc(b.title))}">` : ph}</div>`;
+}
+function pagesInDays(n){
+  let sum = 0; const keys = new Set([...Array(n)].map((_, i) => dk(addDays(new Date(), -i))));
+  S.books.forEach(b => Object.entries(b.log || {}).forEach(([k, v]) => { if (keys.has(k)) sum += v; }));
+  return sum;
+}
+async function searchBooks(q){
+  q = q.trim(); const clean = q.replace(/[-\s]/g, ''), isIsbn = /^(97[89])?\d{9}[\dXx]$/.test(clean);
+  const out = [];
+  try {
+    const r = await fetch('https://www.googleapis.com/books/v1/volumes?maxResults=20&printType=books&q=' + encodeURIComponent(isIsbn ? 'isbn:' + clean : q));
+    const j = await r.json();
+    (j.items || []).forEach(it => {
+      const v = it.volumeInfo || {}; if (!v.title) return;
+      out.push({ title: v.title + (v.subtitle ? ': ' + v.subtitle : ''), author: (v.authors || []).join(', '),
+        cover: ((v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail)) || '').replace('http://', 'https://').replace('&edge=curl', ''),
+        pages: v.pageCount || 0, year: (v.publishedDate || '').slice(0, 4),
+        isbn: ((v.industryIdentifiers || []).find(x => x.type === 'ISBN_13') || {}).identifier || '' });
+    });
+  } catch (e) {}
+  if (!out.length) {
+    try {
+      const r = await fetch('https://openlibrary.org/search.json?limit=20&fields=title,author_name,cover_i,number_of_pages_median,first_publish_year,isbn&' + (isIsbn ? 'isbn=' + clean : 'q=' + encodeURIComponent(q)));
+      const j = await r.json();
+      (j.docs || []).forEach(d => out.push({ title: d.title, author: (d.author_name || []).join(', '), cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '', pages: d.number_of_pages_median || 0, year: d.first_publish_year ? String(d.first_publish_year) : '', isbn: (d.isbn || [])[0] || '' }));
+    } catch (e) {}
+  }
+  return out;
+}
+function addBook(data, status){
+  const b = { id: uid(), title: data.title || 'Ohne Titel', author: data.author || '', cover: data.cover || '', pages: +data.pages || 0, year: data.year || '', isbn: data.isbn || '',
+    status, page: 0, rating: 0, notes: '', quotes: [], log: {}, added: dk(), started: status !== 'want' ? dk() : '', finished: status === 'done' ? dk() : '', updated: Date.now() };
+  if (status === 'done' && b.pages) b.page = b.pages;
+  S.books.unshift(b); save(); return b;
+}
+function setBookStatus(b, st){
+  b.status = st;
+  if (st === 'reading' && !b.started) b.started = dk();
+  if (st === 'done') { b.finished = b.finished || dk(); if (!b.started) b.started = b.finished; if (b.pages) b.page = b.pages; }
+  if (st !== 'done') b.finished = '';
+  b.updated = Date.now(); save();
+}
+function refreshBooks(){ if (UI.bookId) paintBook(); render(); }
+
 // ---------- Rendering ----------
 function topbar(title, actions = '', back = ''){ return `<header class="topbar">${back}<h1>${esc(title)}</h1>${actions}</header>`; }
 function render(){
-  const views = { heute: viewHeute, notizen: viewNotes, todos: viewTodos, news: viewNews, habits: viewHabits };
+  const views = { heute: viewHeute, notizen: viewNotes, todos: viewTodos, news: viewNews, buecher: viewBooks, habits: viewHabits };
   $('#main').innerHTML = views[UI.view]();
   if (UI.view === 'notizen') paintNotesList();
   renderNav();
@@ -596,7 +673,7 @@ function renderNav(){
   const open = allTodos().filter(t => !t.done).length;
   const unread = S.items.filter(i => !i.read).length;
   const hab = S.habits.filter(h => !doneToday(h)).length;
-  const tabs = [['heute','Heute',I.sun,0],['notizen','Notizen',I.pen,inbox],['todos','Todos',I.check,open],['news','News',I.rss,unread],['habits','Habits',I.flame,hab]];
+  const tabs = [['heute','Heute',I.sun,0],['notizen','Notizen',I.pen,inbox],['todos','Todos',I.check,open],['news','News',I.rss,unread],['buecher','Bücher',I.book,0],['habits','Habits',I.flame,hab]];
   $('#nav').innerHTML = tabs.map(([v, l, ic, b]) => `<button class="${UI.view === v ? 'active' : ''}" data-act="go" data-view="${v}">${ic}<span>${l}</span>${b ? `<span class="badge">${b > 99 ? '99+' : b}</span>` : ''}</button>`).join('');
 }
 function go(view){ if (UI.view !== view) { UI.view = view; UI.area = null; window.scrollTo(0, 0); } else if (view === 'notizen') UI.area = null; render(); if (view === 'news' && editionInfo().due && S.feeds.length) refreshFeeds(); }
@@ -624,6 +701,7 @@ function viewHeute(){
     ${habits.length ? `<div class="today-habits">${ring(doneN, habits.length)}<div class="th-list">${habits.map(h => `<button class="th ${doneToday(h) ? 'on' : ''}" data-act="habit-toggle" data-id="${h.id}" data-day="${dk()}"><span>${esc(h.emoji || '•')}</span><span class="th-name">${esc(h.name)}</span></button>`).join('')}</div></div>`
       : `<p class="muted">Noch keine Gewohnheiten. <button class="link" data-act="go" data-view="habits">Jetzt anlegen</button></p>`}
   </section>
+  ${S.books.some(b => b.status === 'reading') ? `<section class="card"><div class="card-head"><h2>Lese ich gerade</h2><button class="link" data-act="go" data-view="buecher">Alle</button></div>${S.books.filter(b => b.status === 'reading').slice(0, 2).map(b => `<div class="reading" style="margin-bottom:8px"><button data-act="book-open" data-id="${b.id}" style="width:44px;flex:none">${coverHtml(b)}</button><div class="grow" style="min-width:0"><span class="h-name" style="font-size:15px">${esc(b.title)}</span><div class="prog"><i style="width:${bookPct(b)}%"></i></div><div class="row"><span class="h-sub grow">S. ${b.page || 0}${b.pages ? ' / ' + b.pages : ''}</span><button class="link" data-act="book-progress" data-id="${b.id}">Seite eintragen</button></div></div></div>`).join('')}</section>` : ''}
   <section class="card">
     <div class="card-head"><h2>Offene Todos · ${todos.length}</h2><button class="link" data-act="go" data-view="todos">Alle</button></div>
     ${todos.length ? todos.slice(0, 6).map(todoRow).join('') + (todos.length > 6 ? `<p class="muted" style="margin-top:4px">+ ${todos.length - 6} weitere</p>` : '') : `<p class="muted">Nichts offen. Schreib „[ ] …“ in eine Notiz, dann taucht es hier auf.</p>`}
@@ -727,6 +805,24 @@ function viewNews(){
       ? `<div class="done-box"><div class="big">✓</div><p><b>Du bist durch.</b></p><p>${ed.on ? `Die nächste Ausgabe kommt ${nextLabel(ed)}.` : 'Keine ungelesenen Artikel.'}<br>Zeit, das Handy wegzulegen.</p></div>`
       : `<div class="empty"><p>${UI.newsFilter === 'saved' ? 'Noch nichts gemerkt. Tippe im Artikel auf ☆.' : 'Keine Artikel.'}</p></div>`;
   return topbar('News', actions) + `<div class="edition">${banner}</div>` + chips + list;
+}
+
+function viewBooks(){
+  const year = new Date().getFullYear(), goal = S.settings.bookGoal || 0;
+  const doneYear = S.books.filter(b => b.status === 'done' && (b.finished || '').startsWith(String(year))).length;
+  const by = st => S.books.filter(b => b.status === st).sort((a, b) => st === 'done' ? (b.finished || '').localeCompare(a.finished || '') : b.updated - a.updated);
+  const head = topbar('Bücher', `<button class="icon-btn" data-act="book-add" aria-label="Buch hinzufügen">${I.plus}</button>`);
+  if (!S.books.length) return head + `<div class="empty"><div class="big">📚</div><p>Noch keine Bücher im Regal.</p><button class="btn primary" data-act="book-add">Buch hinzufügen</button></div>`;
+  const shelves = [['reading','Lese ich'],['want','Merkliste'],['done','Gelesen']];
+  const list = by(UI.bookShelf);
+  let body;
+  if (!list.length) body = `<div class="empty"><p>${UI.bookShelf === 'reading' ? 'Gerade kein Buch angefangen.' : UI.bookShelf === 'want' ? 'Merkliste ist leer.' : 'Noch nichts fertig gelesen.'}</p><button class="btn" data-act="book-add">Buch hinzufügen</button></div>`;
+  else if (UI.bookShelf === 'reading') body = list.map(b => `<section class="card reading"><button data-act="book-open" data-id="${b.id}" style="width:70px;flex:none">${coverHtml(b)}</button><div class="grow" style="min-width:0"><div class="nc-title" style="padding:0;cursor:pointer" data-act="book-open" data-id="${b.id}">${esc(b.title)}</div><div class="muted">${esc(b.author)}</div><div class="prog"><i style="width:${bookPct(b)}%"></i></div><div class="row"><span class="h-sub grow">S. ${b.page || 0}${b.pages ? ` / ${b.pages} · ${bookPct(b)}%` : ''}</span><button class="btn" style="padding:6px 11px;font-size:14px" data-act="book-progress" data-id="${b.id}">Seite</button></div></div></section>`).join('');
+  else body = `<div class="shelf-grid">${list.map(b => `<button class="bk" data-act="book-open" data-id="${b.id}">${coverHtml(b)}<b>${esc(b.title)}</b><small>${b.status === 'done' && b.rating ? `<span class="mini-stars">${'★'.repeat(b.rating)}</span>` : esc(b.author)}</small></button>`).join('')}</div>`;
+  return head
+    + `<section class="card stat-line" data-act="book-goal" style="cursor:pointer"><div class="grow"><div class="stat-num">${doneYear}${goal ? `<span style="color:var(--ink3)"> / ${goal}</span>` : ''}</div><span class="muted">${goal ? `Bücher ${year}` : `gelesen ${year} · Jahresziel setzen`}</span>${goal ? `<div class="prog" style="margin-right:20px"><i style="width:${Math.min(100, doneYear / goal * 100)}%"></i></div>` : ''}</div><div style="text-align:right"><div class="stat-num">${pagesInDays(7)}</div><span class="muted">Seiten · 7 Tage</span></div></section>`
+    + `<div class="seg">${shelves.map(([k, l]) => `<button class="${UI.bookShelf === k ? 'on' : ''}" data-act="book-shelf" data-s="${k}">${l} · ${by(k).length}</button>`).join('')}</div>`
+    + body;
 }
 
 function viewHabits(){
@@ -867,8 +963,97 @@ function paintHabit(id){
   const hw = $('.heat-wrap', el); hw.scrollLeft = hw.scrollWidth;
 }
 
+// Buch-Detail
+function openBook(id){
+  if (!getBook(id)) return; UI.bookId = id;
+  openPage(`<div class="page-bar"><button class="back" data-act="back">${I.back}<span>Bücher</span></button><div class="spacer"></div><button class="icon-btn" data-act="book-menu" data-id="${id}" aria-label="Mehr">${I.more}</button></div><div class="page-body"><div class="page-inner" id="book-body"></div></div>`, () => { UI.bookId = null; });
+  paintBook();
+}
+function paintBook(){
+  const b = getBook(UI.bookId), el = topPage() && $('#book-body', topPage()); if (!b || !el) return;
+  const st = [['want','Will ich lesen'],['reading','Lese ich'],['done','Gelesen']];
+  let stats = '';
+  if (b.status === 'reading' && b.started) {
+    const days = Math.max(1, Math.round((new Date(dk()) - new Date(b.started)) / 864e5) + 1);
+    const avg = Math.round((b.page || 0) / days);
+    const rest = b.pages ? b.pages - (b.page || 0) : 0;
+    const est = avg && rest > 0 ? addDays(new Date(), Math.ceil(rest / avg)) : null;
+    stats = `<p class="h-sub" style="margin:6px 0 0">Seit ${fmtDk(b.started)} · Ø ${avg} S./Tag${est ? ` · fertig ca. ${est.getDate()}. ${MON3[est.getMonth()]}` : ''}</p>`;
+  }
+  const dates = [b.added ? 'Hinzugefügt ' + fmtDk(b.added) : '', b.started ? 'begonnen ' + fmtDk(b.started) : '', b.finished ? 'beendet ' + fmtDk(b.finished) : ''].filter(Boolean).join(' · ');
+  el.innerHTML = `<div style="display:flex;gap:16px;margin:8px 0 16px;align-items:flex-start"><div style="width:108px;flex:none">${coverHtml(b)}</div><div style="min-width:0">
+      <h2 style="font-family:var(--mono);font-size:19px;line-height:1.3;margin:0 0 4px;word-break:break-word">${esc(b.title)}</h2><div class="muted">${esc(b.author)}</div>
+      <div class="h-sub" style="margin-top:6px">${[b.pages ? b.pages + ' Seiten' : '', b.year].filter(Boolean).join(' · ')}</div>
+      ${b.status === 'done' ? `<div class="stars">${[1,2,3,4,5].map(n => `<button data-act="book-rate" data-id="${b.id}" data-n="${n}" class="${n <= (b.rating || 0) ? 'on' : ''}" aria-label="${n} Sterne">★</button>`).join('')}</div>` : ''}
+    </div></div>
+    <div class="seg">${st.map(([k, l]) => `<button class="${b.status === k ? 'on' : ''}" data-act="book-status" data-id="${b.id}" data-s="${k}">${l}</button>`).join('')}</div>
+    ${b.status === 'reading' ? `<section class="card"><div class="prog" style="margin-top:2px"><i style="width:${bookPct(b)}%"></i></div><div class="row"><span class="h-sub grow">S. ${b.page || 0}${b.pages ? ` / ${b.pages} · ${bookPct(b)}%` : ''}</span><button class="btn primary" data-act="book-progress" data-id="${b.id}" style="padding:7px 13px;font-size:14px">Seite eintragen</button></div>${stats}</section>` : ''}
+    <div class="section-title">Notizen</div>
+    <textarea class="field" data-input="book-notes" data-id="${b.id}" rows="4" style="font-family:var(--mono);font-size:15px;resize:vertical" placeholder="Gedanken zum Buch …">${esc(b.notes || '')}</textarea>
+    <div class="section-title">Zitate · ${b.quotes.length}</div>
+    <form data-form="quote" data-id="${b.id}" class="card" style="padding:10px 12px"><textarea name="text" rows="2" data-grow placeholder="Zitat abtippen …" style="width:100%;border:0;outline:none;background:none;resize:none;font-family:var(--mono);font-size:15px"></textarea><div class="row" style="margin-top:6px"><input name="page" type="number" inputmode="numeric" placeholder="Seite" class="field" style="width:96px;padding:7px 10px"><span class="grow"></span><button class="btn primary" style="padding:7px 13px;font-size:14px">Speichern</button></div></form>
+    ${b.quotes.slice().reverse().map(q => `<div class="quote">${esc(q.text)}<div class="h-sub" style="margin-top:5px;display:flex;gap:14px;align-items:center">${q.page ? 'S. ' + q.page : ''}<button class="link" style="font-size:13px" data-act="quote-inbox" data-id="${b.id}" data-q="${q.id}">→ Eingang</button><button class="link" style="font-size:13px;color:var(--ink3)" data-act="quote-del" data-id="${b.id}" data-q="${q.id}">löschen</button></div></div>`).join('')}
+    <p class="muted" style="margin-top:22px;font-size:13px">${dates}</p>`;
+}
+function openBookAdd(){
+  UI.addStatus = UI.bookShelf === 'done' ? 'done' : UI.bookShelf; UI.results = [];
+  openSheet(`<h3>Buch hinzufügen</h3>
+    <form class="row" data-form="book-search"><input class="field grow" name="q" placeholder="Titel, Autor oder ISBN" autocomplete="off" enterkeyhint="search"><button class="btn primary">Suchen</button></form>
+    <div class="seg" style="margin-top:10px" id="add-status">${[['want','Will ich lesen'],['reading','Lese ich'],['done','Gelesen']].map(([k, l]) => `<button type="button" class="${UI.addStatus === k ? 'on' : ''}" data-act="add-status" data-s="${k}">${l}</button>`).join('')}</div>
+    <div id="book-results"><p class="muted">Tipp: Die ISBN von der Buchrückseite findet am genauesten.</p></div>
+    <button class="btn block" data-act="book-manual" style="margin-top:12px">Manuell anlegen</button>`);
+  setTimeout(() => $('#sheet input[name=q]')?.focus(), 250);
+}
+function openProgress(id){
+  const b = getBook(id); if (!b) return;
+  openSheet(`<h3>${esc(b.title)}</h3><form data-form="progress" data-id="${id}">
+    <p class="muted" style="margin-bottom:8px">Auf welcher Seite bist du?</p>
+    <div class="row"><input class="field grow" type="number" inputmode="numeric" name="page" value="${b.page || ''}" min="0" style="font-size:24px;font-family:var(--mono)"><span class="muted">${b.pages ? 'von ' + b.pages : ''}</span></div>
+    <div class="chips" style="margin:12px 0">${[5,10,20,50].map(n => `<button type="button" class="chip" data-act="page-plus" data-n="${n}">+${n}</button>`).join('')}</div>
+    <button class="btn primary block">Speichern</button></form>`);
+  setTimeout(() => { const i = $('#sheet input[name=page]'); i?.focus(); i?.select(); }, 250);
+}
+function setPage(b, np){
+  if (b.pages) np = Math.min(np, b.pages);
+  const diff = np - (b.page || 0), k = dk();
+  if (diff > 0) { b.log = b.log || {}; b.log[k] = (b.log[k] || 0) + diff; S.habits.filter(h => h.auto === 'reading').forEach(h => { h.log[k] = 1; }); }
+  b.page = np; if (b.status !== 'reading' && np < (b.pages || Infinity)) setBookStatus(b, 'reading');
+  b.updated = Date.now(); save(); closeSheet();
+  if (b.pages && np >= b.pages && b.status !== 'done') {
+    setBookStatus(b, 'done');
+    openSheet(`<h3>Durchgelesen! 🎉</h3><p class="muted">Wie fandest du „${esc(b.title)}“?</p><div class="stars" style="justify-content:center;margin:14px 0">${[1,2,3,4,5].map(n => `<button style="font-size:38px" data-act="book-rate" data-id="${b.id}" data-n="${n}" data-close="1">★</button>`).join('')}</div><button class="btn block" data-act="close-sheet">Später</button>`);
+  } else toast(diff > 0 ? `+${diff} Seiten` : 'Gespeichert');
+  refreshBooks();
+}
+
 // ---------- Sheets ----------
-function openSheet(html){ const el = $('#sheet'); el.innerHTML = `<div class="sheet-backdrop" data-act="close-sheet"></div><div class="sheet-panel"><div class="sheet-grip"></div>${html}</div>`; el.classList.add('open'); }
+function openSheet(html){
+  const el = $('#sheet');
+  el.innerHTML = `<div class="sheet-backdrop" data-act="close-sheet"></div><div class="sheet-panel"><div class="sheet-top"><div class="sheet-grip"></div><button class="sheet-x" data-act="close-sheet" aria-label="Schließen"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${html}</div>`;
+  el.classList.add('open');
+}
+// Sheet nach unten wischen = schließen
+(() => {
+  let y0 = null, dy = 0, panel = null;
+  document.addEventListener('touchstart', e => {
+    panel = e.target.closest('.sheet-panel'); if (!panel) return;
+    const onTop = e.target.closest('.sheet-top');
+    if (!onTop && panel.scrollTop > 0) { panel = null; return; }
+    if (e.target.closest('input,textarea,select')) { panel = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; panel.classList.add('drag');
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!panel || y0 === null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy > 0 && panel.scrollTop <= 0) panel.style.transform = `translateY(${dy}px)`; else dy = 0;
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!panel) return;
+    panel.classList.remove('drag');
+    if (dy > 90) closeSheet(); else panel.style.transform = '';
+    panel = null; y0 = null; dy = 0;
+  });
+})();
 function closeSheet(){ const el = $('#sheet'); el.classList.remove('open'); el.innerHTML = ''; }
 
 function openArchiveSheet(id){
@@ -909,6 +1094,7 @@ function openHabitEdit(id){
       <div class="seg" id="freq-seg"><button type="button" class="${h.freq !== 'weekly' ? 'on' : ''}" data-act="freq" data-f="daily">Täglich</button><button type="button" class="${h.freq === 'weekly' ? 'on' : ''}" data-act="freq" data-f="weekly">X× pro Woche</button></div>
       <input type="hidden" name="freq" value="${h.freq === 'weekly' ? 'weekly' : 'daily'}">
       <div id="target-row" class="row" style="${h.freq === 'weekly' ? '' : 'display:none'}"><span class="muted grow">Mal pro Woche</span><select class="field" name="target" style="width:90px">${[1,2,3,4,5,6].map(n => `<option ${n === +h.target ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <label class="row" style="margin-top:14px;gap:10px;align-items:flex-start"><input type="checkbox" name="auto" ${h.auto === 'reading' ? 'checked' : ''} style="width:20px;height:20px;flex:none;margin-top:1px"><span class="muted">Automatisch abhaken, wenn ich bei „Bücher“ Seiten eintrage</span></label>
       <button class="btn primary block" style="margin-top:16px">Speichern</button>
       ${id ? `<button type="button" class="btn danger block" data-act="habit-delete" data-id="${id}">Löschen</button>` : ''}
     </form>`);
@@ -946,7 +1132,7 @@ function openSettings(){
     <button class="btn block" data-act="export">Backup sichern (z. B. in iCloud Drive)</button>
     <button class="btn block" data-act="import">Backup importieren</button>
     <button class="btn danger block" data-act="reset">Alles löschen</button>
-    <p class="muted" style="margin-top:14px;text-align:center">Tagwerk 1.3 · ${S.notes.length} Notizen · ${S.habits.length} Habits · ${S.feeds.length} Feeds</p>`);
+    <p class="muted" style="margin-top:14px;text-align:center">Tagwerk 1.5 · ${S.notes.length} Notizen · ${S.habits.length} Habits · ${S.books.length} Bücher · ${S.feeds.length} Feeds</p>`);
 }
 
 // ---------- Toast ----------
@@ -1054,6 +1240,37 @@ document.addEventListener('click', e => {
     case 'item-note': { const it = S.items.find(i => i.id === d.id); newNote(`# ${it.title}\n${it.link || ''}\n\n`); save(); toast('Im Eingang gespeichert'); break; }
     case 'mark-all-read': S.items.forEach(i => { if (UI.newsFeed === 'all' || i.feedId === UI.newsFeed) i.read = true; }); save(false, true); render(); break;
 
+    // Bücher
+    case 'book-shelf': UI.bookShelf = d.s; render(); break;
+    case 'book-add': openBookAdd(); break;
+    case 'add-status': UI.addStatus = d.s; a.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === a)); break;
+    case 'book-pick': {
+      const r = UI.results[+d.i]; if (!r) break;
+      const b = addBook(r, UI.addStatus); closeSheet(); UI.bookShelf = UI.addStatus;
+      toast(`„${b.title}“ hinzugefügt`); if (UI.view !== 'buecher') go('buecher'); else render();
+      break;
+    }
+    case 'book-manual':
+      openSheet(`<h3>Buch manuell anlegen</h3><form data-form="book-manual"><input class="field" name="title" placeholder="Titel" required><input class="field" name="author" placeholder="Autor/in" style="margin-top:8px"><input class="field" name="pages" type="number" inputmode="numeric" placeholder="Seitenzahl" style="margin-top:8px"><button class="btn primary block" style="margin-top:12px">Anlegen</button></form>`);
+      break;
+    case 'book-open': closeSheet(); openBook(d.id); break;
+    case 'book-progress': openProgress(d.id); break;
+    case 'page-plus': { const i = a.closest('form').page; i.value = (parseInt(i.value) || 0) + +d.n; break; }
+    case 'book-status': { const b = getBook(d.id); setBookStatus(b, d.s); UI.bookShelf = d.s; refreshBooks(); break; }
+    case 'book-rate': { const b = getBook(d.id); b.rating = b.rating === +d.n && !d.close ? 0 : +d.n; b.updated = Date.now(); save(); if (d.close) { closeSheet(); toast('Bewertet'); } refreshBooks(); break; }
+    case 'book-goal': { const v = prompt(`Wie viele Bücher willst du ${new Date().getFullYear()} lesen?`, S.settings.bookGoal || ''); if (v !== null) { S.settings.bookGoal = Math.max(0, parseInt(v) || 0); save(); render(); } break; }
+    case 'book-menu': openSheet(`<h3>${esc(getBook(d.id).title)}</h3><button class="list-btn danger" data-act="book-delete" data-id="${d.id}">✕ Aus dem Regal löschen</button>`); break;
+    case 'book-delete': {
+      const b = getBook(d.id), idx = S.books.indexOf(b); S.books.splice(idx, 1); save(); closeSheet();
+      toast('Buch gelöscht', 'Rückgängig', () => { S.books.splice(idx, 0, b); save(); render(); });
+      if (pageStack.length) closePage(); else render(); break;
+    }
+    case 'quote-inbox': {
+      const b = getBook(d.id), q = b.quotes.find(x => x.id === d.q);
+      newNote(`> ${q.text}\n\n— ${b.author ? b.author + ', ' : ''}*${b.title}*${q.page ? ', S. ' + q.page : ''}`); toast('Zitat im Eingang'); break;
+    }
+    case 'quote-del': { const b = getBook(d.id); b.quotes = b.quotes.filter(x => x.id !== d.q); b.updated = Date.now(); save(); paintBook(); break; }
+
     // Habits
     case 'habit-toggle': {
       toggleHabit(d.id, d.day);
@@ -1063,7 +1280,7 @@ document.addEventListener('click', e => {
     case 'habit-cell': toggleHabit(d.id, d.day); paintHabit(d.id); break;
     case 'habit-detail': openHabit(d.id); break;
     case 'habit-edit': openHabitEdit(d.id); break;
-    case 'habit-suggest': S.habits.push({ id: uid(), name: d.n, emoji: d.e, freq: d.f, target: +d.t, log: {}, created: dk() }); save(); render(); break;
+    case 'habit-suggest': S.habits.push({ id: uid(), name: d.n, emoji: d.e, freq: d.f, target: +d.t, log: {}, created: dk(), auto: /lesen/i.test(d.n) ? 'reading' : '' }); save(); render(); break;
     case 'freq': {
       const f = a.closest('form'); f.freq.value = d.f;
       f.querySelectorAll('#freq-seg button').forEach(b => b.classList.toggle('on', b === a));
@@ -1128,7 +1345,7 @@ document.addEventListener('submit', async e => {
   } else if (kind === 'feed') {
     const url = f.url.value; f.url.value = ''; await addFeed(url);
   } else if (kind === 'habit') {
-    const data = { name: f.name.value.trim(), emoji: f.emoji.value.trim(), freq: f.freq.value, target: +f.target.value || 3 };
+    const data = { name: f.name.value.trim(), emoji: f.emoji.value.trim(), freq: f.freq.value, target: +f.target.value || 3, auto: f.auto.checked ? 'reading' : '' };
     if (!data.name) return;
     if (f.dataset.id) Object.assign(S.habits.find(h => h.id === f.dataset.id), data);
     else S.habits.push({ id: uid(), ...data, log: {}, created: dk() });
@@ -1155,6 +1372,21 @@ document.addEventListener('submit', async e => {
       SY.pass = pass; cryptoKey = null; saveSync(); await sync(true);
     }
     openSettings();
+  } else if (kind === 'book-search') {
+    const q = f.q.value.trim(); if (!q) return;
+    const box = $('#book-results'); box.innerHTML = '<p class="muted">Suche …</p>';
+    const res = await searchBooks(q); UI.results = res;
+    if (!$('#book-results')) return;
+    $('#book-results').innerHTML = res.length ? res.map((r, i) => `<button class="res" data-act="book-pick" data-i="${i}"><div class="cv">${r.cover ? `<img src="${esc(r.cover)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div><div style="min-width:0"><b>${esc(r.title)}</b><small>${esc([r.author, r.year, r.pages ? r.pages + ' S.' : ''].filter(Boolean).join(' · '))}</small></div></button>`).join('')
+      : '<p class="muted">Nichts gefunden. Versuch die ISBN oder leg das Buch manuell an.</p>';
+  } else if (kind === 'book-manual') {
+    const b = addBook({ title: f.title.value.trim(), author: f.author.value.trim(), pages: f.pages.value }, UI.addStatus || 'want');
+    closeSheet(); UI.bookShelf = b.status; toast('Buch angelegt'); if (UI.view !== 'buecher') go('buecher'); else render();
+  } else if (kind === 'progress') {
+    setPage(getBook(f.dataset.id), Math.max(0, parseInt(f.page.value) || 0));
+  } else if (kind === 'quote') {
+    const text = f.text.value.trim(); if (!text) return;
+    const b = getBook(f.dataset.id); b.quotes.push({ id: uid(), text, page: parseInt(f.page.value) || 0, created: Date.now() }); b.updated = Date.now(); save(); paintBook(); toast('Zitat gespeichert');
   } else if (kind === 'proxy') {
     S.settings.proxy = f.p.value.trim(); save(); toast('Proxy gespeichert');
   }
@@ -1166,6 +1398,7 @@ document.addEventListener('input', e => {
     const n = getNote(UI.noteId); if (!n) return;
     n.body = t.value; n.updated = Date.now(); save(); grow(t); wordCount();
   } else if (t.dataset.input === 'search') { UI.search = t.value; paintNotesList(); }
+  else if (t.dataset.input === 'book-notes') { const b = getBook(t.dataset.id); if (b) { b.notes = t.value; b.updated = Date.now(); save(); } }
   if (t.hasAttribute('data-grow')) grow(t);
 });
 document.addEventListener('keydown', e => {
@@ -1214,11 +1447,11 @@ async function gh(path, opt = {}){
 }
 function syncPayload(){
   const { lastFetch, proxy, ...settings } = S.settings;
-  return { app:'tagwerk', v:1, modified: S.modified || 0, notes: S.notes, areas: S.areas, habits: S.habits,
+  return { app:'tagwerk', v:1, modified: S.modified || 0, notes: S.notes, areas: S.areas, habits: S.habits, books: S.books,
     feeds: S.feeds.map(({ error, lastOk, ...f }) => f), saved: S.items.filter(i => i.saved), settings };
 }
 function applyRemote(r){
-  S.notes = r.notes || []; S.areas = r.areas || S.areas; S.habits = r.habits || [];
+  S.notes = r.notes || []; S.areas = r.areas || S.areas; S.habits = r.habits || []; S.books = r.books || S.books;
   S.feeds = (r.feeds || []).map(f => ({ ...(S.feeds.find(x => x.id === f.id) || {}), ...f }));
   S.settings = Object.assign(defaultSettings(), r.settings, { lastFetch: S.settings.lastFetch, proxy: S.settings.proxy });
   const ids = new Set(S.items.map(i => i.id));
@@ -1230,6 +1463,7 @@ function mergeRemote(r){
   const byId = (loc, rem, pick) => { const m = new Map(loc.map(x => [x.id, x])); (rem || []).forEach(x => { const l = m.get(x.id); m.set(x.id, l ? pick(l, x) : x); }); return [...m.values()]; };
   S.notes = byId(S.notes, r.notes, (l, x) => (x.updated || 0) > (l.updated || 0) ? x : l).sort((a, b) => b.updated - a.updated);
   S.areas = byId(S.areas, r.areas, l => l);
+  S.books = byId(S.books, r.books, (l, x) => (x.updated || 0) > (l.updated || 0) ? x : l);
   S.habits = byId(S.habits, r.habits, (l, x) => ({ ...l, log: { ...x.log, ...l.log } }));
   (r.feeds || []).forEach(f => { if (!S.feeds.some(x => x.id === f.id || x.url === f.url)) S.feeds.push(f); });
   const ids = new Set(S.items.map(i => i.id));
@@ -1261,7 +1495,7 @@ async function sync(manual){
       SY.pending = false;
       if (!SY.lastSync && remoteChanged && localChanged) {   // erstes Verbinden eines Geräts mit eigenen Daten: zusammenführen
         mergeRemote(r); S.modified = Date.now(); save(true, true); await writeGist(); render(); toast('Daten dieses Geräts mit dem Gist zusammengeführt');
-      } else if (remoteChanged && !localChanged) { applyRemote(r); SY.base = rm; render(); }
+      } else if (remoteChanged && !localChanged) { applyRemote(r); SY.base = rm; render(); if (UI.bookId) paintBook(); toast('Neuer Stand vom anderen Gerät geladen'); }
       else if (!remoteChanged && localChanged) { await writeGist(); }
       else if (remoteChanged && localChanged) {
         if (rm > lm) { localStorage.setItem(CONFLICT_KEY, JSON.stringify(syncPayload())); applyRemote(r); SY.base = rm; render(); }
@@ -1280,6 +1514,8 @@ async function sync(manual){
   }
 }
 window.addEventListener('online', () => sync());
+window.addEventListener('focus', () => sync());
+setInterval(() => { if (!document.hidden) sync(); }, 60 * 1000);   // solange die App offen ist: jede Minute nach neuem Stand schauen
 
 // ---------- Startfrage „Was wolltest du gerade?“ ----------
 function showIntent(){
@@ -1289,12 +1525,14 @@ function showIntent(){
   const hasNews = S.feeds.length && (ed.due || unread);
   const open = allTodos().filter(t => !t.done).length, habOpen = S.habits.filter(h => !doneToday(h)).length;
   const newsSub = !S.feeds.length ? 'noch keine Feeds' : ed.due ? 'neue Ausgabe bereit' : unread ? `${unread} ungelesen` : `Du bist durch · nächste Ausgabe ${nextLabel(ed)}`;
+  const rb = S.books.filter(b => b.status === 'reading').sort((a, b) => b.updated - a.updated)[0];
   const el = document.createElement('div'); el.id = 'intent'; el.className = 'intent';
   el.innerHTML = `<div class="intent-inner">
     <h2>Was wolltest du gerade?</h2><div class="sub">${S.opens.n}. Mal heute geöffnet</div>
     <button class="intent-btn" data-act="intent" data-i="note"><span class="ic">✎</span><span>Etwas notieren<small>Gedanke, Idee, Todo</small></span></button>
     <button class="intent-btn" data-act="intent" data-i="todos"><span class="ic">•</span><span>Etwas abhaken<small>${open} offen</small></span></button>
     <button class="intent-btn" data-act="intent" data-i="habits"><span class="ic">◎</span><span>Gewohnheit eintragen<small>${S.habits.length ? (habOpen ? `${habOpen} heute noch offen` : 'heute alles erledigt') : 'noch keine angelegt'}</small></span></button>
+    ${rb ? `<button class="intent-btn" data-act="intent" data-i="read"><span class="ic">📖</span><span>Weiterlesen<small>${esc(rb.title)} · S. ${rb.page || 0}</small></span></button>` : ''}
     <button class="intent-btn" data-act="intent" data-i="news" ${hasNews ? '' : 'disabled'}><span class="ic">)))</span><span>News lesen<small>${newsSub}</small></span></button>
     <button class="skip" data-act="intent" data-i="home">Zur Übersicht</button>
     <button class="skip quiet" data-act="intent" data-i="nothing">Eigentlich nichts</button>
@@ -1307,7 +1545,13 @@ function handleIntent(i){
     el.innerHTML = `<div class="intent-inner bye"><div class="big">✓</div><h2 style="font-size:22px">Gute Entscheidung.</h2><p class="muted">Bildschirm aus, Handy weg.</p><button class="skip quiet" data-act="intent" data-i="home">doch zur Übersicht</button></div>`;
     return;
   }
+  if (i === 'read') {
+    const rb = S.books.filter(b => b.status === 'reading').sort((a, b) => b.updated - a.updated)[0];
+    el.innerHTML = `<div class="intent-inner bye"><div class="big">📖</div><h2 style="font-size:22px">Viel Spaß beim Lesen.</h2><p class="muted">Handy weg, Buch auf.<br>Die Seite trägst du danach ein.</p>${rb ? `<button class="btn" style="margin-top:16px;align-self:center" data-act="intent" data-i="readlog" data-id="${rb.id}">Seite jetzt eintragen</button>` : ''}<button class="skip quiet" data-act="intent" data-i="home">zur Übersicht</button></div>`;
+    return;
+  }
   el.remove();
+  if (i === 'readlog') { go('buecher'); const rb = S.books.filter(b => b.status === 'reading').sort((a, b) => b.updated - a.updated)[0]; if (rb) openProgress(rb.id); return; }
   if (i === 'note') { go('notizen'); const n = newNote(''); openNote(n.id, true); }
   else if (i === 'todos') { go('todos'); setTimeout(() => $('form[data-form=todo] input')?.focus(), 50); }
   else go({ habits:'habits', news:'news', home:'heute' }[i] || 'heute');
