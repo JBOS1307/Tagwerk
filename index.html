@@ -983,7 +983,7 @@ function paintBook(){
   const dates = [b.added ? 'Hinzugefügt ' + fmtDk(b.added) : '', b.started ? 'begonnen ' + fmtDk(b.started) : '', b.finished ? 'beendet ' + fmtDk(b.finished) : ''].filter(Boolean).join(' · ');
   el.innerHTML = `<div style="display:flex;gap:16px;margin:8px 0 16px;align-items:flex-start"><div style="width:108px;flex:none">${coverHtml(b)}</div><div style="min-width:0">
       <h2 style="font-family:var(--mono);font-size:19px;line-height:1.3;margin:0 0 4px;word-break:break-word">${esc(b.title)}</h2><div class="muted">${esc(b.author)}</div>
-      <div class="h-sub" style="margin-top:6px">${[b.pages ? b.pages + ' Seiten' : '', b.year].filter(Boolean).join(' · ')}</div>
+      <button class="h-sub" style="margin-top:6px;text-align:left" data-act="book-edit" data-id="${b.id}">${[b.pages ? b.pages + ' Seiten' : 'Seitenzahl fehlt', b.year].filter(Boolean).join(' · ')} <span style="color:var(--accent)">✎</span></button>
       ${b.status === 'done' ? `<div class="stars">${[1,2,3,4,5].map(n => `<button data-act="book-rate" data-id="${b.id}" data-n="${n}" class="${n <= (b.rating || 0) ? 'on' : ''}" aria-label="${n} Sterne">★</button>`).join('')}</div>` : ''}
     </div></div>
     <div class="seg">${st.map(([k, l]) => `<button class="${b.status === k ? 'on' : ''}" data-act="book-status" data-id="${b.id}" data-s="${k}">${l}</button>`).join('')}</div>
@@ -1132,7 +1132,7 @@ function openSettings(){
     <button class="btn block" data-act="export">Backup sichern (z. B. in iCloud Drive)</button>
     <button class="btn block" data-act="import">Backup importieren</button>
     <button class="btn danger block" data-act="reset">Alles löschen</button>
-    <p class="muted" style="margin-top:14px;text-align:center">Tagwerk 1.5 · ${S.notes.length} Notizen · ${S.habits.length} Habits · ${S.books.length} Bücher · ${S.feeds.length} Feeds</p>`);
+    <p class="muted" style="margin-top:14px;text-align:center">Tagwerk 1.6 · ${S.notes.length} Notizen · ${S.habits.length} Habits · ${S.books.length} Bücher · ${S.feeds.length} Feeds</p>`);
 }
 
 // ---------- Toast ----------
@@ -1254,12 +1254,23 @@ document.addEventListener('click', e => {
       openSheet(`<h3>Buch manuell anlegen</h3><form data-form="book-manual"><input class="field" name="title" placeholder="Titel" required><input class="field" name="author" placeholder="Autor/in" style="margin-top:8px"><input class="field" name="pages" type="number" inputmode="numeric" placeholder="Seitenzahl" style="margin-top:8px"><button class="btn primary block" style="margin-top:12px">Anlegen</button></form>`);
       break;
     case 'book-open': closeSheet(); openBook(d.id); break;
+    case 'book-edit': {
+      const b = getBook(d.id);
+      openSheet(`<h3>Buch bearbeiten</h3><form data-form="book-edit" data-id="${b.id}">
+        <label class="muted">Seitenzahl <span style="font-size:13px">(z. B. vom E-Book-Reader)</span></label>
+        <input class="field" name="pages" type="number" inputmode="numeric" min="0" value="${b.pages || ''}" style="margin:4px 0 12px;font-size:22px;font-family:var(--mono)">
+        <label class="muted">Titel</label><input class="field" name="title" value="${esc(b.title)}" style="margin:4px 0 12px">
+        <label class="muted">Autor/in</label><input class="field" name="author" value="${esc(b.author)}" style="margin-top:4px">
+        <button class="btn primary block" style="margin-top:16px">Speichern</button></form>`);
+      setTimeout(() => { const i = $('#sheet input[name=pages]'); i?.focus(); i?.select(); }, 250);
+      break;
+    }
     case 'book-progress': openProgress(d.id); break;
     case 'page-plus': { const i = a.closest('form').page; i.value = (parseInt(i.value) || 0) + +d.n; break; }
     case 'book-status': { const b = getBook(d.id); setBookStatus(b, d.s); UI.bookShelf = d.s; refreshBooks(); break; }
     case 'book-rate': { const b = getBook(d.id); b.rating = b.rating === +d.n && !d.close ? 0 : +d.n; b.updated = Date.now(); save(); if (d.close) { closeSheet(); toast('Bewertet'); } refreshBooks(); break; }
     case 'book-goal': { const v = prompt(`Wie viele Bücher willst du ${new Date().getFullYear()} lesen?`, S.settings.bookGoal || ''); if (v !== null) { S.settings.bookGoal = Math.max(0, parseInt(v) || 0); save(); render(); } break; }
-    case 'book-menu': openSheet(`<h3>${esc(getBook(d.id).title)}</h3><button class="list-btn danger" data-act="book-delete" data-id="${d.id}">✕ Aus dem Regal löschen</button>`); break;
+    case 'book-menu': openSheet(`<h3>${esc(getBook(d.id).title)}</h3><button class="list-btn" data-act="book-edit" data-id="${d.id}">✎ Bearbeiten (Titel, Autor, Seitenzahl)</button><button class="list-btn danger" data-act="book-delete" data-id="${d.id}">✕ Aus dem Regal löschen</button>`); break;
     case 'book-delete': {
       const b = getBook(d.id), idx = S.books.indexOf(b); S.books.splice(idx, 1); save(); closeSheet();
       toast('Buch gelöscht', 'Rückgängig', () => { S.books.splice(idx, 0, b); save(); render(); });
@@ -1382,6 +1393,13 @@ document.addEventListener('submit', async e => {
   } else if (kind === 'book-manual') {
     const b = addBook({ title: f.title.value.trim(), author: f.author.value.trim(), pages: f.pages.value }, UI.addStatus || 'want');
     closeSheet(); UI.bookShelf = b.status; toast('Buch angelegt'); if (UI.view !== 'buecher') go('buecher'); else render();
+  } else if (kind === 'book-edit') {
+    const b = getBook(f.dataset.id); if (!b) return;
+    const oldPages = b.pages || 0, np = Math.max(0, parseInt(f.pages.value) || 0);
+    if (oldPages && np && b.page && b.status === 'reading') b.page = Math.round(b.page / oldPages * np);   // Fortschritt in % beibehalten
+    b.pages = np; if (b.pages && b.page > b.pages) b.page = b.pages; if (b.status === 'done' && b.pages) b.page = b.pages;
+    b.title = f.title.value.trim() || b.title; b.author = f.author.value.trim();
+    b.updated = Date.now(); save(); closeSheet(); toast('Gespeichert'); refreshBooks();
   } else if (kind === 'progress') {
     setPage(getBook(f.dataset.id), Math.max(0, parseInt(f.page.value) || 0));
   } else if (kind === 'quote') {
